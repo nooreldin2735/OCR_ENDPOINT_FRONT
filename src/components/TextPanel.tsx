@@ -7,8 +7,13 @@ import {
     Cpu,
     FileStack,
     Type,
+    FileDown,
+    FileText,
 } from "lucide-react";
 import type { OCRResponse } from "../types/ocr";
+import { marked } from "marked";
+// @ts-ignore - html2pdf doesn't have official types
+import html2pdf from "html2pdf.js";
 
 interface TextPanelProps {
     data: OCRResponse;
@@ -19,6 +24,46 @@ interface TextPanelProps {
     open: boolean;
     onToggle: () => void;
 }
+
+const handleDownloadMarkdown = (content: string) => {
+    const blob = new Blob([content], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ocr-result-${new Date().getTime()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
+const handleDownloadPDF = async (content: string) => {
+    const htmlContent = await marked.parse(content);
+    const element = document.createElement("div");
+    element.innerHTML = `<div style="padding: 40px; font-family: sans-serif; line-height: 1.6; color: #333; direction: rtl;">${htmlContent}</div>`;
+
+    // Add some styling to tables to make them look good in PDF
+    const style = document.createElement("style");
+    style.innerHTML = `
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: right; }
+        th { bg-color: #f8f8f8; font-weight: bold; }
+        h1, h2, h3 { color: #2563eb; }
+        p { margin: 10px 0; }
+    `;
+    element.appendChild(style);
+
+    const opt = {
+        margin: 10,
+        filename: `ocr-result-${new Date().getTime()}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    } as const;
+
+    // @ts-ignore
+    html2pdf().from(element).set(opt).save();
+};
 
 export default function TextPanel({
     data,
@@ -98,6 +143,32 @@ export default function TextPanel({
                                     <span className="text-[10px] font-semibold">{page?.blocks.length ?? 0}</span>
                                 </div>
                             </div>
+
+                            {/* Download Buttons */}
+                            {data.markdown && (
+                                <div className="flex flex-col gap-2">
+                                    <motion.button
+                                        initial={{ opacity: 0, y: 5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        onClick={() => handleDownloadMarkdown(data.markdown!)}
+                                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary transition-all group"
+                                    >
+                                        <FileDown className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                                        <span className="text-sm font-semibold">Download Markdown</span>
+                                    </motion.button>
+
+                                    <motion.button
+                                        initial={{ opacity: 0, y: 5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.1 }}
+                                        onClick={() => handleDownloadPDF(data.markdown!)}
+                                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent/20 hover:bg-accent/30 border border-accent/30 text-accent transition-all group"
+                                    >
+                                        <FileText className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                                        <span className="text-sm font-semibold">Download PDF</span>
+                                    </motion.button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-3">

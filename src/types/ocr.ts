@@ -27,6 +27,7 @@ export interface Page {
 
 export interface OCRResponse {
     pages: Page[];
+    markdown?: string;
     metadata: {
         source_type: string;
         model: string;
