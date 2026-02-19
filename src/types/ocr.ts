@@ -34,3 +34,11 @@ export interface OCRResponse {
         processed_pages: number;
     };
 }
+
+export interface OCRHistoryEntry {
+    id: string;
+    timestamp: number;
+    fileName: string;
+    imageUrl: string; // Base64 or Object URL (if temporary)
+    data: OCRResponse;
+}

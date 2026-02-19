@@ -1,19 +1,23 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: hsl(240 10% 3.9%);
-  --color-foreground: hsl(0 0% 98%);
-  --color-primary: hsl(245 58% 61%);
-  --color-primary-foreground: hsl(0 0% 98%);
-  --color-secondary: hsl(240 3.7% 15.9%);
-  --color-secondary-foreground: hsl(0 0% 98%);
-  --color-muted: hsl(240 3.7% 15.9%);
-  --color-muted-foreground: hsl(240 5% 64.9%);
-  --color-accent: hsl(263 55% 58%);
-  --color-accent-foreground: hsl(0 0% 98%);
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(222.2 84% 4.9%);
 
-  --color-glass-border: hsla(0, 0%, 98%, 0.1);
-  --color-glass: hsla(240, 10%, 3.9%, 0.6);
+  --color-primary: hsl(221.2 83.2% 53.3%);
+  --color-primary-foreground: hsl(210 40% 98%);
+
+  --color-secondary: hsl(210 40% 96.1%);
+  --color-secondary-foreground: hsl(222.2 47.4% 11.2%);
+
+  --color-muted: hsl(210 40% 96.1%);
+  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+
+  --color-accent: hsl(222.2 47.4% 11.2%);
+  --color-accent-foreground: hsl(210 40% 98%);
+
+  --color-glass-border: hsla(222.2, 47.4%, 11.2%, 0.1);
+  --color-glass: hsla(0, 0%, 100%, 0.8);
 
   --radius-lg: 0.75rem;
   --radius-md: calc(0.75rem - 2px);
@@ -35,19 +39,19 @@
 @layer base {
   body {
     @apply bg-background text-foreground antialiased;
-    background-image: radial-gradient(at 0% 0%, hsla(245, 58%, 61%, 0.15) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, hsla(263, 55%, 58%, 0.15) 0px, transparent 50%);
+    background-image: radial-gradient(at 0% 0%, hsla(221, 83%, 53%, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(222, 47%, 11%, 0.05) 0px, transparent 50%);
     min-height: 100vh;
   }
 }
 
 @layer components {
   .glass-panel {
-    @apply bg-glass/40 backdrop-blur-md border border-glass-border shadow-xl;
+    @apply bg-glass backdrop-blur-md border border-glass-border shadow-lg;
   }
 
   .glass-panel-strong {
-    @apply bg-glass/80 backdrop-blur-xl border border-glass-border shadow-2xl;
+    @apply bg-white border border-glass-border shadow-2xl;
   }
 
   .gradient-text {
@@ -55,7 +59,7 @@
   }
 
   .glow-primary {
-    box-shadow: 0 0 20px -5px hsla(245, 58%, 61%, 0.3);
+    box-shadow: 0 0 20px -5px hsla(221, 83%, 53%, 0.2);
   }
 }
 
@@ -68,9 +72,9 @@
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  @apply bg-secondary/80 rounded-full;
+  @apply bg-secondary-foreground/20 rounded-full;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  @apply bg-secondary;
+  @apply bg-secondary-foreground/30;
 }
