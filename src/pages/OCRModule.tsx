@@ -93,7 +93,7 @@ export default function OCRModule() {
                                     icon={<Download className="h-4 w-4" />}
                                     step="04"
                                     title="Export"
-                                    desc="Save as Markdown or PDF"
+                                    desc="Save as Markdown, PDF or CSV"
                                     delay={0.4}
                                 />
                             </div>
@@ -161,7 +161,7 @@ export default function OCRModule() {
                         <div className="flex-1 overflow-auto w-full flex items-center justify-center p-4 bg-secondary/20 rounded-[2.5rem] border border-glass-border shadow-inner">
                             <OCRViewer
                                 imageUrl={imageUrl}
-                                page={result.pages[0]}
+                                data={result}
                                 hoveredBlockId={hoveredBlockId}
                                 onHoverBlock={setHoveredBlockId}
                                 searchQuery={searchQuery}

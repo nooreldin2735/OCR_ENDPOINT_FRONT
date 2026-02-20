@@ -37,6 +37,18 @@ const handleDownloadMarkdown = (content: string) => {
     URL.revokeObjectURL(url);
 };
 
+const handleDownloadCSV = (content: string) => {
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ocr-result-${new Date().getTime()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
 const handleDownloadPDF = async (content: string) => {
     const htmlContent = await marked.parse(content);
     const element = document.createElement("div");
@@ -145,30 +157,44 @@ export default function TextPanel({
                             </div>
 
                             {/* Download Buttons */}
-                            {data.markdown && (
-                                <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-2">
+                                {data.markdown && (
+                                    <>
+                                        <motion.button
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            onClick={() => handleDownloadMarkdown(data.markdown!)}
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary transition-all group"
+                                        >
+                                            <FileDown className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                                            <span className="text-sm font-semibold">Download Markdown</span>
+                                        </motion.button>
+
+                                        <motion.button
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.1 }}
+                                            onClick={() => handleDownloadPDF(data.markdown!)}
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent/20 hover:bg-accent/30 border border-accent/30 text-accent transition-all group"
+                                        >
+                                            <FileText className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                                            <span className="text-sm font-semibold">Download PDF</span>
+                                        </motion.button>
+                                    </>
+                                )}
+                                {data.csv && (
                                     <motion.button
                                         initial={{ opacity: 0, y: 5 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        onClick={() => handleDownloadMarkdown(data.markdown!)}
-                                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary transition-all group"
+                                        transition={{ delay: 0.2 }}
+                                        onClick={() => handleDownloadCSV(data.csv!)}
+                                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-500 transition-all group"
                                     >
                                         <FileDown className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                                        <span className="text-sm font-semibold">Download Markdown</span>
+                                        <span className="text-sm font-semibold">Download CSV</span>
                                     </motion.button>
-
-                                    <motion.button
-                                        initial={{ opacity: 0, y: 5 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.1 }}
-                                        onClick={() => handleDownloadPDF(data.markdown!)}
-                                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent/20 hover:bg-accent/30 border border-accent/30 text-accent transition-all group"
-                                    >
-                                        <FileText className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                                        <span className="text-sm font-semibold">Download PDF</span>
-                                    </motion.button>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
 
                         <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-3">
