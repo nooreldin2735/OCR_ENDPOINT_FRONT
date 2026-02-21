@@ -139,11 +139,7 @@ export default function TextPanel({
 
                             {/* Metadata */}
                             <div className="grid grid-cols-3 gap-2">
-                                <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-secondary/30 border border-glass-border">
-                                    <Cpu className="h-4 w-4 text-primary" />
-                                    <span className="text-[10px] text-muted-foreground uppercase">Model</span>
-                                    <span className="text-[10px] font-semibold truncate w-full text-center">{data.metadata.model}</span>
-                                </div>
+
                                 <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-secondary/30 border border-glass-border">
                                     <FileStack className="h-4 w-4 text-accent" />
                                     <span className="text-[10px] text-muted-foreground uppercase">Pages</span>
