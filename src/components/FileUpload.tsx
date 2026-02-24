@@ -3,33 +3,36 @@ import { motion } from "framer-motion";
 import { Upload, FileImage, FileText } from "lucide-react";
 
 interface FileUploadProps {
-    onFileSelect: (file: File) => void;
+    onFilesSelect: (files: File[]) => void;
     loading: boolean;
+    multiple?: boolean;
+    maxFiles?: number;
 }
 
 const ACCEPTED = ["image/png", "image/jpeg", "image/webp", "image/tiff", "application/pdf"];
 
-export default function FileUpload({ onFileSelect, loading }: FileUploadProps) {
+export default function FileUpload({ onFilesSelect, loading, multiple = false, maxFiles = 1 }: FileUploadProps) {
     const [dragging, setDragging] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const handleFile = useCallback(
-        (file: File) => {
-            if (ACCEPTED.includes(file.type)) {
-                onFileSelect(file);
+    const handleFiles = useCallback(
+        (files: FileList | null) => {
+            if (!files) return;
+            const validFiles = Array.from(files).filter(file => ACCEPTED.includes(file.type));
+            if (validFiles.length > 0) {
+                onFilesSelect(multiple ? validFiles.slice(0, maxFiles) : [validFiles[0]]);
             }
         },
-        [onFileSelect]
+        [onFilesSelect, multiple, maxFiles]
     );
 
     const onDrop = useCallback(
         (e: React.DragEvent) => {
             e.preventDefault();
             setDragging(false);
-            const file = e.dataTransfer.files[0];
-            if (file) handleFile(file);
+            handleFiles(e.dataTransfer.files);
         },
-        [handleFile]
+        [handleFiles]
     );
 
     return (
@@ -63,9 +66,9 @@ export default function FileUpload({ onFileSelect, loading }: FileUploadProps) {
                     accept={ACCEPTED.join(",")}
                     className="hidden"
                     disabled={loading}
+                    multiple={multiple}
                     onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleFile(file);
+                        handleFiles(e.target.files);
                     }}
                 />
 
@@ -79,7 +82,7 @@ export default function FileUpload({ onFileSelect, loading }: FileUploadProps) {
 
                     <div>
                         <p className="text-lg font-semibold text-foreground">
-                            Drop your file here or{" "}
+                            {multiple ? `Drop up to ${maxFiles} files here or ` : "Drop your file here or "}
                             <span className="gradient-text">browse</span>
                         </p>
                         <p className="mt-1 text-sm text-muted-foreground">

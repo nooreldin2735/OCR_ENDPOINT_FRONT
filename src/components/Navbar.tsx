@@ -84,7 +84,7 @@ export default function Navbar() {
 
                 <div className="flex items-center gap-3 text-xs font-medium text-white/40 px-1">
                     <FileText className="h-4 w-4" />
-                    <span className="leading-tight">Spatial Intelligence Platform v1.2</span>
+                    <span className="leading-tight">ASCL Platform v1.2</span>
                 </div>
             </div>
         </aside>

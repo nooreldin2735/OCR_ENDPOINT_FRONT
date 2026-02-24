@@ -4,13 +4,18 @@ import type { OCRResponse, OCRHistoryEntry } from "../types/ocr";
 
 interface OCRContextType {
     result: OCRResponse | null;
+    results: OCRResponse[];
     loading: boolean;
     error: string | null;
     imageUrl: string | null;
+    imageUrls: string[];
+    currentResultIndex: number;
     history: OCRHistoryEntry[];
     isHistoryOpen: boolean;
     activeFileName: string;
     processFile: (file: File) => Promise<void>;
+    processBulkFiles: (files: File[], maxPages: number) => Promise<void>;
+    setResultIndex: (index: number) => void;
     reset: () => void;
     setResult: (result: OCRResponse | null) => void;
     setImageUrl: (url: string | null) => void;
@@ -27,13 +32,17 @@ const MAX_HISTORY = 10;
 const STORAGE_KEY = "acme_saico_ocr_history";
 
 export function OCRProvider({ children }: { children: ReactNode }) {
-    const [result, setResult] = useState<OCRResponse | null>(null);
+    const [results, setResults] = useState<OCRResponse[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [imageUrls, setImageUrls] = useState<string[]>([]);
+    const [currentResultIndex, setCurrentResultIndex] = useState(0);
     const [history, setHistory] = useState<OCRHistoryEntry[]>([]);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [activeFileName, setActiveFileName] = useState<string>("");
+
+    const result = results[currentResultIndex] || null;
 
     // Load History
     useEffect(() => {
@@ -67,11 +76,14 @@ export function OCRProvider({ children }: { children: ReactNode }) {
     const processFile = useCallback(async (uploadedFile: File) => {
         setActiveFileName(uploadedFile.name);
         setError(null);
-        setResult(null);
+        setResults([]);
+        setImageUrls([]);
+        setCurrentResultIndex(0);
         setLoading(true);
 
         const url = URL.createObjectURL(uploadedFile);
         setImageUrl(url);
+        setImageUrls([url]);
 
         try {
             const formData = new FormData();
@@ -88,7 +100,7 @@ export function OCRProvider({ children }: { children: ReactNode }) {
             if (!response.ok) throw new Error(`OCR processing failed (${response.status})`);
 
             const data: OCRResponse = await response.json();
-            setResult(data);
+            setResults([data]);
         } catch (err) {
             setError(err instanceof Error ? err.message : "An unexpected error occurred");
         } finally {
@@ -96,14 +108,61 @@ export function OCRProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+    const processBulkFiles = useCallback(async (uploadedFiles: File[], maxPages: number) => {
+        setActiveFileName(`${uploadedFiles.length} files`);
+        setError(null);
+        setResults([]);
+        setImageUrls([]);
+        setCurrentResultIndex(0);
+        setLoading(true);
+
+        const urls = uploadedFiles.map(file => URL.createObjectURL(file));
+        setImageUrls(urls);
+        setImageUrl(urls[0]);
+
+        try {
+            const formData = new FormData();
+            uploadedFiles.forEach(file => {
+                formData.append("files", file);
+            });
+
+            const response = await fetch(`https://ocr.mohamed-rabiee.tech/ocr/bulk?max_pages=${maxPages}`, {
+                method: "POST",
+                headers: { "Accept": "application/json" },
+                body: formData,
+                mode: "cors",
+                referrerPolicy: "no-referrer",
+            });
+
+            if (!response.ok) throw new Error(`Bulk OCR processing failed (${response.status})`);
+
+            const data: OCRResponse[] = await response.json();
+            setResults(data);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "An unexpected error occurred");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const setResultIndex = useCallback((index: number) => {
+        if (index >= 0 && index < results.length) {
+            setCurrentResultIndex(index);
+            setImageUrl(imageUrls[index] || null);
+        }
+    }, [results.length, imageUrls]);
+
     const reset = useCallback(() => {
-        if (imageUrl) URL.revokeObjectURL(imageUrl);
-        setResult(null);
+        imageUrls.forEach(url => URL.revokeObjectURL(url));
+        if (imageUrl && !imageUrls.includes(imageUrl)) URL.revokeObjectURL(imageUrl);
+        setResults([]);
+        setImageUrls([]);
         setImageUrl(null);
+        setCurrentResultIndex(0);
         setError(null);
         setLoading(false);
         setActiveFileName("");
-    }, [imageUrl]);
+    }, [imageUrl, imageUrls]);
 
     const deleteHistoryItem = useCallback((id: string) => {
         const updated = history.filter(h => h.id !== id);
@@ -112,16 +171,20 @@ export function OCRProvider({ children }: { children: ReactNode }) {
     }, [history]);
 
     const restoreFromHistory = useCallback((entry: OCRHistoryEntry) => {
-        setResult(entry.data);
+        setResults([entry.data]);
+        setImageUrls([entry.imageUrl]);
         setImageUrl(entry.imageUrl);
+        setCurrentResultIndex(0);
         setActiveFileName(entry.fileName);
         setIsHistoryOpen(false);
     }, []);
 
     return (
         <OCRContext.Provider value={{
-            result, loading, error, imageUrl, history, isHistoryOpen, activeFileName,
-            processFile, reset, setResult, setImageUrl, setIsHistoryOpen, setHistory,
+            result, results, loading, error, imageUrl, imageUrls, currentResultIndex,
+            history, isHistoryOpen, activeFileName,
+            processFile, processBulkFiles, setResultIndex, reset, setResult: (r) => setResults(r ? [r] : []),
+            setImageUrl, setIsHistoryOpen, setHistory,
             setActiveFileName, deleteHistoryItem, restoreFromHistory
         }}>
             {children}

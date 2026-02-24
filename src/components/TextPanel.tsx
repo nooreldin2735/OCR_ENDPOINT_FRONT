@@ -4,7 +4,6 @@ import {
     Search,
     PanelRightClose,
     PanelRightOpen,
-    Cpu,
     FileStack,
     Type,
     FileDown,

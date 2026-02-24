@@ -43,3 +43,5 @@ export interface OCRHistoryEntry {
     imageUrl: string; // Base64 or Object URL (if temporary)
     data: OCRResponse;
 }
+
+export type BulkOCRResponse = OCRResponse[];
