@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 import type { OCRResponse, OCRHistoryEntry } from "../types/ocr";
+import { convertPdfToImages } from "../utils/pdfUtils";
 
 interface OCRContextType {
     result: OCRResponse | null;
@@ -73,56 +74,32 @@ export function OCRProvider({ children }: { children: ReactNode }) {
         }
     }, [result, imageUrl, history, activeFileName]);
 
-    const processFile = useCallback(async (uploadedFile: File) => {
-        setActiveFileName(uploadedFile.name);
-        setError(null);
-        setResults([]);
-        setImageUrls([]);
-        setCurrentResultIndex(0);
-        setLoading(true);
-
-        const url = URL.createObjectURL(uploadedFile);
-        setImageUrl(url);
-        setImageUrls([url]);
-
-        try {
-            const formData = new FormData();
-            formData.append("file", uploadedFile);
-
-            const response = await fetch("https://ocr.mohamed-rabiee.tech/ocr", {
-                method: "POST",
-                headers: { "Accept": "application/json" },
-                body: formData,
-                mode: "cors",
-                referrerPolicy: "no-referrer",
-            });
-
-            if (!response.ok) throw new Error(`OCR processing failed (${response.status})`);
-
-            const data: OCRResponse = await response.json();
-            setResults([data]);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "An unexpected error occurred");
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
     const processBulkFiles = useCallback(async (uploadedFiles: File[], maxPages: number) => {
-        setActiveFileName(`${uploadedFiles.length} files`);
+        setActiveFileName(uploadedFiles.length > 1 ? `${uploadedFiles.length} files` : uploadedFiles[0].name);
         setError(null);
         setResults([]);
         setImageUrls([]);
         setCurrentResultIndex(0);
         setLoading(true);
 
-        const urls = uploadedFiles.map(file => URL.createObjectURL(file));
-        setImageUrls(urls);
-        setImageUrl(urls[0]);
-
         try {
+            const filesToProcess: File[] = [];
+
+            for (const file of uploadedFiles) {
+                if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                    const pdfImages = await convertPdfToImages(file);
+                    filesToProcess.push(...pdfImages);
+                } else {
+                    filesToProcess.push(file);
+                }
+            }
+
+            const urls = filesToProcess.map(file => URL.createObjectURL(file));
+            setImageUrls(urls);
+            setImageUrl(urls[0]);
+
             const formData = new FormData();
-            uploadedFiles.forEach(file => {
+            filesToProcess.forEach(file => {
                 formData.append("files", file);
             });
 
@@ -144,6 +121,56 @@ export function OCRProvider({ children }: { children: ReactNode }) {
             setLoading(false);
         }
     }, []);
+
+    const processFile = useCallback(async (uploadedFile: File) => {
+        setActiveFileName(uploadedFile.name);
+        setError(null);
+        setResults([]);
+        setImageUrls([]);
+        setCurrentResultIndex(0);
+        setLoading(true);
+
+        try {
+            let filesToProcess: File[] = [uploadedFile];
+
+            // Check if file is PDF
+            if (uploadedFile.type === 'application/pdf' || uploadedFile.name.toLowerCase().endsWith('.pdf')) {
+                filesToProcess = await convertPdfToImages(uploadedFile);
+                if (filesToProcess.length === 0) throw new Error("Could not extract images from PDF");
+            }
+
+            const urls = filesToProcess.map(file => URL.createObjectURL(file));
+            setImageUrls(urls);
+            setImageUrl(urls[0]);
+
+            if (filesToProcess.length > 1) {
+                // If PDF has multiple pages, treat as bulk
+                await processBulkFiles(filesToProcess, 50); // Default to 50 max pages
+                return;
+            }
+
+            const fileToUpload = filesToProcess[0];
+            const formData = new FormData();
+            formData.append("file", fileToUpload);
+
+            const response = await fetch("https://ocr.mohamed-rabiee.tech/ocr", {
+                method: "POST",
+                headers: { "Accept": "application/json" },
+                body: formData,
+                mode: "cors",
+                referrerPolicy: "no-referrer",
+            });
+
+            if (!response.ok) throw new Error(`OCR processing failed (${response.status})`);
+
+            const data: OCRResponse = await response.json();
+            setResults([data]);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "An unexpected error occurred");
+        } finally {
+            setLoading(false);
+        }
+    }, [processBulkFiles]);
 
     const setResultIndex = useCallback((index: number) => {
         if (index >= 0 && index < results.length) {
