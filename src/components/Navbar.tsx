@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Search, Home, FileText, ChevronRight, Clock, LogOut, User as UserIcon } from "lucide-react";
-import logo from "../assets/Logo-Acme.png";
+import logo from "../assets/company_logo.png";
 import { useOCRContext } from "../contexts/OCRContext";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -22,7 +22,7 @@ export default function Navbar() {
             {/* Brand Header */}
             <div className="flex flex-col gap-4 mb-10">
                 <div className="flex items-center gap-3">
-                    <img src={logo} alt="ACME SAICO Logo" className="h-10 w-auto brightness-0 invert" />
+                    <img src={logo} alt="ACME SAICO Logo" className="h-10 w-auto" />
                     <div className="flex flex-col">
                         <span className="text-xl font-bold tracking-tight text-white">
                             ACME<span className="text-primary">SAICO</span>

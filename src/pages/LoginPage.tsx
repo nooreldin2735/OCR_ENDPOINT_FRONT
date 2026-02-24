@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
 import { Lock, User, ShieldCheck, ArrowRight, Loader2 } from "lucide-react";
-import logo from "../assets/Logo-Acme.png";
+import logo from "../assets/company_logo.png";
 
 export default function LoginPage() {
     const [username, setUsername] = useState("");
