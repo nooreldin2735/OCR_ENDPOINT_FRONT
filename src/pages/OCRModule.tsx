@@ -20,13 +20,13 @@ export default function OCRModule() {
     const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [panelOpen, setPanelOpen] = useState(true);
-    const [maxPages, setMaxPages] = useState<number>(0);
     const [setupMode, setSetupMode] = useState<'single' | 'bulk' | null>(null);
     const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
     const handleFilesSelect = (files: File[]) => {
         if (setupMode === 'bulk') {
-            const updatedPending = [...pendingFiles, ...files].slice(0, maxPages);
+            // Use 50 as a reasonable upper bound for simultaneous file selections
+            const updatedPending = [...pendingFiles, ...files].slice(0, 50);
             setPendingFiles(updatedPending);
         } else {
             processFile(files[0]);
@@ -34,7 +34,7 @@ export default function OCRModule() {
     };
 
     const triggerBulkProcessing = () => {
-        processBulkFiles(pendingFiles, maxPages);
+        processBulkFiles(pendingFiles, pendingFiles.length);
     };
 
     const handleDownloadMergedCSV = () => {
@@ -118,7 +118,6 @@ export default function OCRModule() {
                             onClick={() => {
                                 reset();
                                 setSetupMode(null);
-                                setMaxPages(0);
                                 setPendingFiles([]);
                             }}
                             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white hover:bg-accent/90 transition-all text-sm font-bold shadow-lg shadow-accent/20"
@@ -147,7 +146,6 @@ export default function OCRModule() {
                             <button
                                 onClick={() => {
                                     setSetupMode('single');
-                                    setMaxPages(1);
                                 }}
                                 className="group p-8 rounded-[2rem] bg-secondary/50 border border-glass-border hover:border-primary/50 transition-all hover:shadow-2xl hover:shadow-primary/10 text-left"
                             >
@@ -172,47 +170,7 @@ export default function OCRModule() {
                     </motion.div>
                 )}
 
-                {setupMode === 'bulk' && maxPages === 0 && !loading && !result && (
-                    <motion.div
-                        key="config-container"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="w-full max-w-md bg-white/40 backdrop-blur-xl p-12 rounded-[3rem] border border-glass-border shadow-2xl space-y-8 text-center"
-                    >
-                        <div className="space-y-4">
-                            <h3 className="text-2xl font-black text-accent tracking-tighter">Bulk Configuration</h3>
-                            <p className="text-sm text-muted-foreground font-medium">How many images do you want to process?</p>
-                        </div>
-
-                        <div className="flex flex-col gap-4">
-                            <input
-                                type="number"
-                                min="1"
-                                max="10"
-                                defaultValue="5"
-                                id="max-pages-input"
-                                className="w-full p-4 rounded-2xl bg-secondary border border-glass-border focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-center text-xl font-black text-accent"
-                            />
-                            <button
-                                onClick={() => {
-                                    const val = (document.getElementById('max-pages-input') as HTMLInputElement).value;
-                                    setMaxPages(parseInt(val, 10) || 5);
-                                }}
-                                className="w-full py-4 rounded-2xl bg-primary text-white font-black hover:bg-primary/90 transition-all shadow-xl shadow-primary/20"
-                            >
-                                CONTINUE TO UPLOAD
-                            </button>
-                            <button
-                                onClick={() => setSetupMode(null)}
-                                className="text-xs font-bold text-muted-foreground uppercase tracking-widest hover:text-accent transition-colors"
-                            >
-                                Back to selection
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-
-                {setupMode && (maxPages > 0 || setupMode === 'single') && !result && !loading && (
+                {setupMode && !result && !loading && (
                     <motion.div
                         key="upload-container"
                         initial={{ opacity: 0, y: 20 }}
@@ -229,33 +187,24 @@ export default function OCRModule() {
                                                 <Clock className="h-4 w-4" />
                                             </div>
                                             <h3 className="text-sm font-black uppercase tracking-widest text-accent">
-                                                {setupMode === 'bulk' ? `Bulk Processing (${pendingFiles.length}/${maxPages} Collected)` : "Single Document Analysis"}
+                                                {setupMode === 'bulk' ? `Bulk Processing (${pendingFiles.length} Collected)` : "Single Document Analysis"}
                                             </h3>
                                         </div>
                                     </div>
 
-                                    {setupMode === 'bulk' && pendingFiles.length < maxPages ? (
+                                    {setupMode === 'bulk' ? (
                                         <FileUpload
                                             onFilesSelect={handleFilesSelect}
                                             loading={loading}
-                                            multiple={false}
-                                        />
-                                    ) : setupMode === 'single' ? (
-                                        <FileUpload
-                                            onFilesSelect={handleFilesSelect}
-                                            loading={loading}
-                                            multiple={false}
+                                            multiple={true}
+                                            maxFiles={50 - pendingFiles.length}
                                         />
                                     ) : (
-                                        <div className="p-12 rounded-[2.5rem] bg-primary/5 border-2 border-dashed border-primary/20 flex flex-col items-center gap-4 text-center">
-                                            <div className="p-4 bg-primary/10 rounded-full">
-                                                <ScanText className="h-8 w-8 text-primary" />
-                                            </div>
-                                            <div>
-                                                <p className="text-lg font-bold text-accent">All Images Collected</p>
-                                                <p className="text-sm text-muted-foreground">You have uploaded {pendingFiles.length} files. Ready to analyze.</p>
-                                            </div>
-                                        </div>
+                                        <FileUpload
+                                            onFilesSelect={handleFilesSelect}
+                                            loading={loading}
+                                            multiple={false}
+                                        />
                                     )}
                                 </div>
 
@@ -276,28 +225,39 @@ export default function OCRModule() {
                                 <div className="w-full md:w-80 space-y-4">
                                     <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2">Uploaded Queue</h4>
                                     <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                        {Array.from({ length: maxPages }).map((_, i) => (
+                                        {pendingFiles.map((file, i) => (
                                             <div
                                                 key={i}
-                                                className={`p-4 rounded-2xl border transition-all duration-300 flex items-center gap-3 ${pendingFiles[i]
-                                                    ? "bg-white border-primary/20 shadow-sm"
-                                                    : "bg-secondary/30 border-glass-border opacity-50"
-                                                    }`}
+                                                className="p-4 rounded-2xl border transition-all duration-300 flex items-center gap-3 bg-white border-primary/20 shadow-sm"
                                             >
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${pendingFiles[i] ? "bg-primary text-white" : "bg-secondary text-muted-foreground"
-                                                    }`}>
+                                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black bg-primary text-white">
                                                     {i + 1}
                                                 </div>
                                                 <div className="min-w-0">
                                                     <p className="text-xs font-bold text-accent truncate">
-                                                        {pendingFiles[i] ? pendingFiles[i].name : "Waiting for upload..."}
+                                                        {file.name}
                                                     </p>
                                                     <p className="text-[10px] text-muted-foreground font-bold">
-                                                        {pendingFiles[i] ? `${(pendingFiles[i].size / 1024).toFixed(1)} KB` : "Slot Empty"}
+                                                        {(file.size / 1024).toFixed(1)} KB
                                                     </p>
                                                 </div>
                                             </div>
                                         ))}
+                                        {pendingFiles.length === 0 && (
+                                            <div className="p-4 rounded-2xl border border-glass-border bg-secondary/30 text-center opacity-50 flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black bg-secondary text-muted-foreground">
+                                                    1
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-bold text-accent truncate text-left">
+                                                        Waiting for upload...
+                                                    </p>
+                                                    <p className="text-[10px] text-muted-foreground font-bold text-left">
+                                                        Empty Slot
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
