@@ -32,6 +32,7 @@ export interface LineItem {
     goods_products: string;
     quantity: string;
     unit_price: string;
+    currency: string;
     whole_price_amount: string;
     total_price: string;
 }

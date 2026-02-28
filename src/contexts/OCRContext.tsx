@@ -108,7 +108,7 @@ export function OCRProvider({ children }: { children: ReactNode }) {
 
             // Post-process to ensure CSV is present if line_items exists
             const processedData = data.map(res => {
-                if (!res.csv && res.line_items && res.line_items.length > 0) {
+                if (res.line_items && res.line_items.length > 0) {
                     return { ...res, csv: generateCsvFromLineItems(res.line_items) };
                 }
                 return res;
@@ -172,7 +172,7 @@ export function OCRProvider({ children }: { children: ReactNode }) {
             const data: OCRResponse = await response.json();
 
             // Post-process to ensure CSV is present if line_items exists
-            if (!data.csv && data.line_items && data.line_items.length > 0) {
+            if (data.line_items && data.line_items.length > 0) {
                 data.csv = generateCsvFromLineItems(data.line_items);
             }
 

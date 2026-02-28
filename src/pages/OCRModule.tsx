@@ -6,9 +6,10 @@ import TextPanel from "../components/TextPanel";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import {
     RotateCcw, Sparkles, ScanText,
-    Cpu, Clock, Download, ChevronLeft, ChevronRight, FileText, Layers, Upload
+    Cpu, Download, ChevronLeft, ChevronRight, FileText, Layers
 } from "lucide-react";
 import { useOCRContext } from "../contexts/OCRContext";
+import { generateCsvFromLineItems } from "../utils/csvUtils";
 
 export default function OCRModule() {
     const {
@@ -33,21 +34,9 @@ export default function OCRModule() {
 
     const handleDownloadMergedCSV = () => {
         if (results.length === 0) return;
-        let mergedCsv = "";
-        let headerAdded = false;
-        results.forEach((res) => {
-            if (!res.csv) return;
-            const lines = res.csv.trim().split("\n");
-            if (lines.length === 0) return;
-            if (!headerAdded) {
-                mergedCsv += res.csv.trim() + "\n";
-                headerAdded = true;
-            } else {
-                if (lines.length > 1) {
-                    mergedCsv += lines.slice(1).join("\n") + "\n";
-                }
-            }
-        });
+        const allLineItems = results.flatMap(res => res.line_items || []);
+        const mergedCsv = generateCsvFromLineItems(allLineItems);
+
         if (!mergedCsv) return;
         const blob = new Blob([mergedCsv], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
