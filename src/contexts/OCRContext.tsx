@@ -14,6 +14,7 @@ interface OCRContextType {
     currentResultIndex: number;
     history: OCRHistoryEntry[];
     isHistoryOpen: boolean;
+    isSidebarOpen: boolean;
     activeFileName: string;
     processFile: (file: File) => Promise<void>;
     processBulkFiles: (files: File[], maxPages: number) => Promise<void>;
@@ -22,6 +23,7 @@ interface OCRContextType {
     setResult: (result: OCRResponse | null) => void;
     setImageUrl: (url: string | null) => void;
     setIsHistoryOpen: (open: boolean) => void;
+    setIsSidebarOpen: (open: boolean) => void;
     setHistory: (history: OCRHistoryEntry[]) => void;
     setActiveFileName: (name: string) => void;
     deleteHistoryItem: (id: string) => void;
@@ -41,6 +43,7 @@ export function OCRProvider({ children }: { children: ReactNode }) {
     const [currentResultIndex, setCurrentResultIndex] = useState(0);
     const [history, setHistory] = useState<OCRHistoryEntry[]>([]);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [activeFileName, setActiveFileName] = useState<string>("");
 
     const result = results[currentResultIndex] || null;
@@ -217,9 +220,9 @@ export function OCRProvider({ children }: { children: ReactNode }) {
     return (
         <OCRContext.Provider value={{
             result, results, loading, error, imageUrl, imageUrls, currentResultIndex,
-            history, isHistoryOpen, activeFileName,
+            history, isHistoryOpen, isSidebarOpen, activeFileName,
             processFile, processBulkFiles, setResultIndex, reset, setResult: (r) => setResults(r ? [r] : []),
-            setImageUrl, setIsHistoryOpen, setHistory,
+            setImageUrl, setIsHistoryOpen, setIsSidebarOpen, setHistory,
             setActiveFileName, deleteHistoryItem, restoreFromHistory
         }}>
             {children}

@@ -110,12 +110,12 @@ export default function OCRViewer({
             </div>
 
             {viewMode === 'image' && (
-                <div className="relative inline-block select-none max-h-[80vh] overflow-hidden rounded-lg">
+                <div className="relative inline-block select-none max-w-full w-fit overflow-hidden rounded-xl shadow-2xl border border-glass-border">
                     <img
                         ref={imgRef}
                         src={imageUrl}
                         alt="Uploaded document"
-                        className="max-h-[80vh] w-auto block"
+                        className="max-h-[70vh] md:max-h-[80vh] w-full md:w-auto block object-contain"
                         draggable={false}
                     />
 
@@ -179,8 +179,8 @@ export default function OCRViewer({
             )}
 
             {viewMode === 'markdown' && data.markdown && (
-                <div className="w-full max-h-[80vh] overflow-y-auto overflow-x-hidden p-8 bg-transparent text-sm text-foreground/90 flex justify-center custom-scrollbar">
-                    <div className="max-w-4xl w-full text-left bg-white p-8 rounded-2xl shadow-sm border border-glass-border prose prose-sm max-w-none">
+                <div className="w-full max-h-[70vh] md:max-h-[80vh] overflow-y-auto overflow-x-hidden p-4 md:p-8 bg-transparent text-sm text-foreground/90 flex justify-center custom-scrollbar">
+                    <div className="max-w-4xl w-full text-left bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-glass-border prose prose-sm max-w-none">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {data.markdown}
                         </ReactMarkdown>
@@ -189,8 +189,8 @@ export default function OCRViewer({
             )}
 
             {viewMode === 'csv' && data.csv && (
-                <div className="w-full max-h-[80vh] overflow-y-auto overflow-x-auto p-8 bg-transparent text-sm text-foreground/90 flex justify-center custom-scrollbar">
-                    <div className="min-w-max bg-white p-6 rounded-2xl shadow-sm border border-glass-border inline-block">
+                <div className="w-full max-h-[70vh] md:max-h-[80vh] overflow-y-auto overflow-x-auto p-4 md:p-8 bg-transparent text-sm text-foreground/90 flex justify-center custom-scrollbar">
+                    <div className="min-w-max bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-glass-border inline-block">
                         {(() => {
                             const parsed = Papa.parse(data.csv!, { header: true });
                             if (parsed.data && parsed.data.length > 0) {

@@ -116,7 +116,7 @@ export default function TextPanel({
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="fixed top-0 right-0 z-40 h-full w-96 glass-panel-strong border-l border-glass-border flex flex-col shadow-2xl"
+                        className="fixed top-16 md:top-0 right-0 z-40 h-[calc(100%-4rem)] md:h-full w-full md:w-96 glass-panel-strong border-l border-glass-border flex flex-col shadow-2xl"
                     >
                         {/* Header */}
                         <div className="p-6 border-b border-glass-border space-y-4 pt-16">
