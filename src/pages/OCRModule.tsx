@@ -24,6 +24,12 @@ export default function OCRModule() {
     const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
     const handleFilesSelect = (files: File[]) => {
+        if (files.length > 1 && setupMode !== 'bulk') {
+            setSetupMode('bulk');
+            setPendingFiles(prev => [...prev, ...files].slice(0, 50));
+            return;
+        }
+
         if (setupMode === 'bulk') {
             const updatedPending = [...pendingFiles, ...files].slice(0, 50);
             setPendingFiles(updatedPending);
@@ -139,7 +145,8 @@ export default function OCRModule() {
                             <FileUpload
                                 onFilesSelect={handleFilesSelect}
                                 loading={loading}
-                                multiple={setupMode === 'bulk'}
+                                multiple={true}
+                                maxFiles={50}
                             />
 
                             {setupMode === 'bulk' && pendingFiles.length > 0 && (

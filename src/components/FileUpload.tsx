@@ -11,7 +11,7 @@ interface FileUploadProps {
 
 const ACCEPTED = ["image/png", "image/jpeg", "image/webp", "image/tiff", "application/pdf"];
 
-export default function FileUpload({ onFilesSelect, loading, multiple = false, maxFiles = 1 }: FileUploadProps) {
+export default function FileUpload({ onFilesSelect, loading, multiple = false, maxFiles = multiple ? 100 : 1 }: FileUploadProps) {
     const [dragging, setDragging] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
