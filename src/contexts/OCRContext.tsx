@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 import type { ReactNode } from "react";
 import type { OCRResponse, OCRHistoryEntry } from "../types/ocr";
 import { convertPdfToImages } from "../utils/pdfUtils";
+import { generateCsvFromLineItems } from "../utils/csvUtils";
 
 interface OCRContextType {
     result: OCRResponse | null;
@@ -30,7 +31,6 @@ interface OCRContextType {
 const OCRContext = createContext<OCRContextType | undefined>(undefined);
 
 const MAX_HISTORY = 10;
-const STORAGE_KEY = "acme_saico_ocr_history";
 
 export function OCRProvider({ children }: { children: ReactNode }) {
     const [results, setResults] = useState<OCRResponse[]>([]);
@@ -45,37 +45,25 @@ export function OCRProvider({ children }: { children: ReactNode }) {
 
     const result = results[currentResultIndex] || null;
 
-    // Load History
-    useEffect(() => {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) setHistory(JSON.parse(saved));
-        } catch (e) {
-            console.error("Failed to load history", e);
-        }
+    const addToHistory = useCallback((res: OCRResponse, url: string, fileName: string) => {
+        setHistory(prev => {
+            const exists = prev.some(h => JSON.stringify(h.data) === JSON.stringify(res));
+            if (exists) return prev;
+
+            const newEntry: OCRHistoryEntry = {
+                id: crypto.randomUUID(),
+                timestamp: Date.now(),
+                fileName: fileName || "Processed Document",
+                imageUrl: url,
+                data: res
+            };
+            return [newEntry, ...prev].slice(0, MAX_HISTORY);
+        });
     }, []);
 
-    // Save to History
-    useEffect(() => {
-        if (result && imageUrl) {
-            const exists = history.some(h => JSON.stringify(h.data) === JSON.stringify(result));
-            if (!exists) {
-                const newEntry: OCRHistoryEntry = {
-                    id: crypto.randomUUID(),
-                    timestamp: Date.now(),
-                    fileName: activeFileName || "Processed Document",
-                    imageUrl: imageUrl,
-                    data: result
-                };
-                const updated = [newEntry, ...history].slice(0, MAX_HISTORY);
-                setHistory(updated);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-            }
-        }
-    }, [result, imageUrl, history, activeFileName]);
-
     const processBulkFiles = useCallback(async (uploadedFiles: File[], maxPages: number) => {
-        setActiveFileName(uploadedFiles.length > 1 ? `${uploadedFiles.length} files` : uploadedFiles[0].name);
+        const batchFileName = uploadedFiles.length > 1 ? `${uploadedFiles.length} files` : uploadedFiles[0].name;
+        setActiveFileName(batchFileName);
         setError(null);
         setResults([]);
         setImageUrls([]);
@@ -114,16 +102,31 @@ export function OCRProvider({ children }: { children: ReactNode }) {
             if (!response.ok) throw new Error(`Bulk OCR processing failed (${response.status})`);
 
             const data: OCRResponse[] = await response.json();
-            setResults(data);
+
+            // Post-process to ensure CSV is present if line_items exists
+            const processedData = data.map(res => {
+                if (!res.csv && res.line_items && res.line_items.length > 0) {
+                    return { ...res, csv: generateCsvFromLineItems(res.line_items) };
+                }
+                return res;
+            });
+
+            setResults(processedData);
+
+            // Add the first result of the bulk set to history
+            if (processedData.length > 0) {
+                addToHistory(processedData[0], urls[0], batchFileName);
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : "An unexpected error occurred");
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [addToHistory]);
 
     const processFile = useCallback(async (uploadedFile: File) => {
-        setActiveFileName(uploadedFile.name);
+        const fileName = uploadedFile.name;
+        setActiveFileName(fileName);
         setError(null);
         setResults([]);
         setImageUrls([]);
@@ -164,13 +167,20 @@ export function OCRProvider({ children }: { children: ReactNode }) {
             if (!response.ok) throw new Error(`OCR processing failed (${response.status})`);
 
             const data: OCRResponse = await response.json();
+
+            // Post-process to ensure CSV is present if line_items exists
+            if (!data.csv && data.line_items && data.line_items.length > 0) {
+                data.csv = generateCsvFromLineItems(data.line_items);
+            }
+
             setResults([data]);
+            addToHistory(data, urls[0], fileName);
         } catch (err) {
             setError(err instanceof Error ? err.message : "An unexpected error occurred");
         } finally {
             setLoading(false);
         }
-    }, [processBulkFiles]);
+    }, [processBulkFiles, addToHistory]);
 
     const setResultIndex = useCallback((index: number) => {
         if (index >= 0 && index < results.length) {
@@ -192,10 +202,8 @@ export function OCRProvider({ children }: { children: ReactNode }) {
     }, [imageUrl, imageUrls]);
 
     const deleteHistoryItem = useCallback((id: string) => {
-        const updated = history.filter(h => h.id !== id);
-        setHistory(updated);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    }, [history]);
+        setHistory(prev => prev.filter(h => h.id !== id));
+    }, []);
 
     const restoreFromHistory = useCallback((entry: OCRHistoryEntry) => {
         setResults([entry.data]);

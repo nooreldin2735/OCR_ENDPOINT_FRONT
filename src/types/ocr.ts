@@ -25,10 +25,22 @@ export interface Page {
     blocks: Block[];
 }
 
+export interface LineItem {
+    company_from: string;
+    company_to: string;
+    invoice_number: string;
+    goods_products: string;
+    quantity: string;
+    unit_price: string;
+    whole_price_amount: string;
+    total_price: string;
+}
+
 export interface OCRResponse {
     pages: Page[];
     markdown?: string;
     csv?: string;
+    line_items?: LineItem[];
     metadata: {
         source_type: string;
         model: string;

@@ -41,14 +41,17 @@ export default function OCRModule() {
         if (results.length === 0) return;
 
         let mergedCsv = "";
-        results.forEach((res, idx) => {
+        let headerAdded = false;
+
+        results.forEach((res) => {
             if (!res.csv) return;
             const lines = res.csv.trim().split("\n");
             if (lines.length === 0) return;
 
-            if (idx === 0) {
-                // Keep everything for the first file (header + data)
+            if (!headerAdded) {
+                // Keep everything for the first file that has a CSV (header + data)
                 mergedCsv += res.csv.trim() + "\n";
+                headerAdded = true;
             } else {
                 // Skip header for subsequent files
                 if (lines.length > 1) {
